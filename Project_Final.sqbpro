@@ -1,237 +1,473 @@
-<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/willi/Documents/Thus 2/Code/Data Science/SQL/Ex_Files_SQL_EssT/Exercise Files/WSDA_Music.db" readonly="0" foreign_keys="0" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="0" synchronous="1"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="150"/><column_width id="3" width="6158"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,5:mainAlbum"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="Challenge1">/*
-	Created:26/05/2023
-	
-	Challenge 1:
-	1. How many transactions took place between the years 2011 and 2012?
-	2. How much money did WSDA Music make during the same period?
-*/
-	
-	
--- 1. How many transactions took place between the years 2011 and 2012?
-SELECT
-	count(*)
-FROM
-	Invoice i
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-
--- There were 167 transactions in the year 2011 and 2012
-
-
--- 2. How much money did WSDA Music make during the same period?
-SELECT
-	sum(total)
-FROM
-	Invoice
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-	
--- WSDA made $1947.97
-
-</sql><sql name="Challenge2">/*
-	Created:26/05/2023
-	
-	Challenge 2:
-	1. Get a list of customers who made purchases between 2011 and 2012.
-	2. Get a list of customers, sales reps, and total transaction amounts for each customer
-		between 2011 and 2012.
-	3. How many transactions are above the average transaction amount during the same
-		time period?
-	4. What is the average transaction amount for each year that WSDA Music has been
-		in business? 
-*/
-
-
-/*
- 1. &amp; 2. Get a list of customers, sales reps, and total transaction amounts for each customer
-			between 2011 and 2012.
-*/
-
-SELECT
-	strftime(&quot;%Y-%m-%d&quot;, i.InvoiceDate) AS InvoiceDate,
-	c.FirstName || ' ' || c.LastName AS [Customer Name],
-	e.FirstName || ' ' || e.LastName AS [Sales Rep Name],
-	i.total
-	
-	
-FROM
-	Invoice i
-INNER JOIN
-	Customer c
-ON
-	i.CustomerId = c.CustomerId
-INNER JOIN
-	Employee e
-ON
-	c.SupportRepId = e.EmployeeId
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-	
-
-/*
-	3.How many transactions are above the average transaction amount during the 
-		same time period?
-*/
-
-SELECT
-	count(*) AS [Number of transactions above the average]
-	
-FROM
-	Invoice i
-INNER JOIN
-	Customer c
-ON
-	i.CustomerId = c.CustomerId
-INNER JOIN
-	Employee e
-ON
-	c.SupportRepId = e.EmployeeId
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-	AND
-	i.total &gt; 
-		(SELECT avg(total) 
-		FROM Invoice 
-		WHERE strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;))
-		
--- There are 26 transactions above the average 
-
-
-/*
-	4. What is the average transaction amount for each year that WSDA Music
-	has been in business?
-*/
-
-SELECT
-	strftime(&quot;%Y&quot;, InvoiceDate) AS Year,
-	round(avg(total),2) AS [Average By Year]
-FROM
-	Invoice
-GROUP BY
-	Year
-	
-/*
-	Exeptionally high average in the year 2011 despite the same amount of 
-	sales
-*/
-
-</sql><sql name="Challenge3">/*
-	Created:27/05/2023
-	
-	Challenge 3:
-	1. Get a list of employees who exceeded the average transaction amount from sales they
-		generated during 2011 and 2012.
-	2. Create a Commission Payout column that displays each employee’s commission
-		based on 15% of the sales transaction amount.
-	3. Which employee made the highest commission?
-	4. List the customers that the employee identified in the last question.
-	5. Which customer made the highest purchase?
-	6. Look at this customer record—do you see anything suspicious?
-	7. Who do you conclude is our primary person of interest?
-*/
-
-
-/*
-	1. Get a list of employees who exceeded the average transaction amount from sales they
-		generated during 2011 and 2012.
-*/
-
-SELECT
-	e.FirstName || ' ' || e.LastName AS [Employee Name],
-	sum(i.total) AS [Total Sales] 
-	
-FROM
-	Invoice i
-INNER JOIN
-	Customer c
-ON
-	i.CustomerId = c.CustomerId
-INNER JOIN
-	Employee e
-ON
-	c.SupportRepId = e.EmployeeId
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-	AND
-	i.total &gt; 
-		(SELECT avg(total) 
-		FROM Invoice 
-		WHERE strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;,&quot;2012&quot;))
-GROUP BY
-	[Employee Name]
-	
-/*	
-	2. Create a Commission Payout column that displays each employee's commission based on 
-		15% of the sales transaction amount
-*/
-
-SELECT
-	e.FirstName || ' ' || e.LastName AS [Employee Name],
-	round(sum(i.total) * .15, 2) AS [Commission Payout] 
-FROM
-	Employee e
-INNER JOIN
-	Customer c
-ON 
-	e.EmployeeId = c.SupportRepId
-INNER JOIN
-	Invoice i
-ON 
-	c.CustomerId = i.CustomerId
-WHERE
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-GROUP BY
-	[Employee Name]
-
-
--- 3. Which employee made the highest commission?
-
--- Jane Peacock with $199.77
-
-
--- 4. List the customers that the employee identified in the last question
-
-SELECT
-	strftime(&quot;%Y-%m-%d&quot;, i.InvoiceDate) AS [Invoice Date],
-	c.FirstName || ' ' || c.LastName AS [Customer Name],
-	sum(i.total) AS [Total]
-FROM
-	Customer c
-INNER JOIN
-	Employee e
-ON
-	c.SupportRepId = e.EmployeeId
-INNER JOIN
-	Invoice i
-ON
-	c.CustomerId = i.CustomerId
-WHERE
-	e.FirstName || ' ' || e.LastName = &quot;Jane Peacock&quot;
-	AND
-	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
-GROUP BY
-	[Customer Name]
-ORDER BY
-	Total DESC
-
-
--- 5. Which customer made the highest purchase?
-
--- John Doeein with $1000.86
-
-
--- 6. Take a look at this customer's record, does it look suspicious?
-
-SELECT
-	*
-FROM
-	Customer
-WHERE 
-	LastName = &quot;Doeein&quot;
-
--- Yes! There are many columns with NULL data, meaning that the row was never created officially
-
-
--- 7. Who do you conclude is our primary person of interest
-
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="./WSDA_Music.db" readonly="0" foreign_keys="0" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="0" synchronous="1"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="150"/><column_width id="3" width="6158"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><current_table name="4,5:mainAlbum"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="Challenge1">/*
+
+	Created:26/05/2023
+
+	
+
+	Challenge 1:
+
+	1. How many transactions took place between the years 2011 and 2012?
+
+	2. How much money did WSDA Music make during the same period?
+
+*/
+
+	
+
+	
+
+-- 1. How many transactions took place between the years 2011 and 2012?
+
+SELECT
+
+	count(*)
+
+FROM
+
+	Invoice i
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+
+
+-- There were 167 transactions in the year 2011 and 2012
+
+
+
+
+
+-- 2. How much money did WSDA Music make during the same period?
+
+SELECT
+
+	sum(total)
+
+FROM
+
+	Invoice
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+	
+
+-- WSDA made $1947.97
+
+
+
+</sql><sql name="Challenge2">/*
+
+	Created:26/05/2023
+
+	
+
+	Challenge 2:
+
+	1. Get a list of customers who made purchases between 2011 and 2012.
+
+	2. Get a list of customers, sales reps, and total transaction amounts for each customer
+
+		between 2011 and 2012.
+
+	3. How many transactions are above the average transaction amount during the same
+
+		time period?
+
+	4. What is the average transaction amount for each year that WSDA Music has been
+
+		in business? 
+
+*/
+
+
+
+
+
+/*
+
+ 1. &amp; 2. Get a list of customers, sales reps, and total transaction amounts for each customer
+
+			between 2011 and 2012.
+
+*/
+
+
+
+SELECT
+
+	strftime(&quot;%Y-%m-%d&quot;, i.InvoiceDate) AS InvoiceDate,
+
+	c.FirstName || ' ' || c.LastName AS [Customer Name],
+
+	e.FirstName || ' ' || e.LastName AS [Sales Rep Name],
+
+	i.total
+
+	
+
+	
+
+FROM
+
+	Invoice i
+
+INNER JOIN
+
+	Customer c
+
+ON
+
+	i.CustomerId = c.CustomerId
+
+INNER JOIN
+
+	Employee e
+
+ON
+
+	c.SupportRepId = e.EmployeeId
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+	
+
+
+
+/*
+
+	3.How many transactions are above the average transaction amount during the 
+
+		same time period?
+
+*/
+
+
+
+SELECT
+
+	count(*) AS [Number of transactions above the average]
+
+	
+
+FROM
+
+	Invoice i
+
+INNER JOIN
+
+	Customer c
+
+ON
+
+	i.CustomerId = c.CustomerId
+
+INNER JOIN
+
+	Employee e
+
+ON
+
+	c.SupportRepId = e.EmployeeId
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+	AND
+
+	i.total &gt; 
+
+		(SELECT avg(total) 
+
+		FROM Invoice 
+
+		WHERE strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;))
+
+		
+
+-- There are 26 transactions above the average 
+
+
+
+
+
+/*
+
+	4. What is the average transaction amount for each year that WSDA Music
+
+	has been in business?
+
+*/
+
+
+
+SELECT
+
+	strftime(&quot;%Y&quot;, InvoiceDate) AS Year,
+
+	round(avg(total),2) AS [Average By Year]
+
+FROM
+
+	Invoice
+
+GROUP BY
+
+	Year
+
+	
+
+/*
+
+	Exeptionally high average in the year 2011 despite the same amount of 
+
+	sales
+
+*/
+
+
+
+</sql><sql name="Challenge3">/*
+
+	Created:27/05/2023
+
+	
+
+	Challenge 3:
+
+	1. Get a list of employees who exceeded the average transaction amount from sales they
+
+		generated during 2011 and 2012.
+
+	2. Create a Commission Payout column that displays each employee’s commission
+
+		based on 15% of the sales transaction amount.
+
+	3. Which employee made the highest commission?
+
+	4. List the customers that the employee identified in the last question.
+
+	5. Which customer made the highest purchase?
+
+	6. Look at this customer record—do you see anything suspicious?
+
+	7. Who do you conclude is our primary person of interest?
+
+*/
+
+
+
+
+
+/*
+
+	1. Get a list of employees who exceeded the average transaction amount from sales they
+
+		generated during 2011 and 2012.
+
+*/
+
+
+
+SELECT
+
+	e.FirstName || ' ' || e.LastName AS [Employee Name],
+
+	sum(i.total) AS [Total Sales] 
+
+	
+
+FROM
+
+	Invoice i
+
+INNER JOIN
+
+	Customer c
+
+ON
+
+	i.CustomerId = c.CustomerId
+
+INNER JOIN
+
+	Employee e
+
+ON
+
+	c.SupportRepId = e.EmployeeId
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+	AND
+
+	i.total &gt; 
+
+		(SELECT avg(total) 
+
+		FROM Invoice 
+
+		WHERE strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;,&quot;2012&quot;))
+
+GROUP BY
+
+	[Employee Name]
+
+	
+
+/*	
+
+	2. Create a Commission Payout column that displays each employee's commission based on 
+
+		15% of the sales transaction amount
+
+*/
+
+
+
+SELECT
+
+	e.FirstName || ' ' || e.LastName AS [Employee Name],
+
+	round(sum(i.total) * .15, 2) AS [Commission Payout] 
+
+FROM
+
+	Employee e
+
+INNER JOIN
+
+	Customer c
+
+ON 
+
+	e.EmployeeId = c.SupportRepId
+
+INNER JOIN
+
+	Invoice i
+
+ON 
+
+	c.CustomerId = i.CustomerId
+
+WHERE
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+GROUP BY
+
+	[Employee Name]
+
+
+
+
+
+-- 3. Which employee made the highest commission?
+
+
+
+-- Jane Peacock with $199.77
+
+
+
+
+
+-- 4. List the customers that the employee identified in the last question
+
+
+
+SELECT
+
+	strftime(&quot;%Y-%m-%d&quot;, i.InvoiceDate) AS [Invoice Date],
+
+	c.FirstName || ' ' || c.LastName AS [Customer Name],
+
+	sum(i.total) AS [Total]
+
+FROM
+
+	Customer c
+
+INNER JOIN
+
+	Employee e
+
+ON
+
+	c.SupportRepId = e.EmployeeId
+
+INNER JOIN
+
+	Invoice i
+
+ON
+
+	c.CustomerId = i.CustomerId
+
+WHERE
+
+	e.FirstName || ' ' || e.LastName = &quot;Jane Peacock&quot;
+
+	AND
+
+	strftime(&quot;%Y&quot;, InvoiceDate) IN (&quot;2011&quot;, &quot;2012&quot;)
+
+GROUP BY
+
+	[Customer Name]
+
+ORDER BY
+
+	Total DESC
+
+
+
+
+
+-- 5. Which customer made the highest purchase?
+
+
+
+-- John Doeein with $1000.86
+
+
+
+
+
+-- 6. Take a look at this customer's record, does it look suspicious?
+
+
+
+SELECT
+
+	*
+
+FROM
+
+	Customer
+
+WHERE 
+
+	LastName = &quot;Doeein&quot;
+
+
+
+-- Yes! There are many columns with NULL data, meaning that the row was never created officially
+
+
+
+
+
+-- 7. Who do you conclude is our primary person of interest
+
+
+
 -- Jane Peacock is sus</sql><current_tab id="2"/></tab_sql></sqlb_project>
