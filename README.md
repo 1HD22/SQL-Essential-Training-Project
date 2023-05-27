@@ -1,6 +1,6 @@
 # SQL Essential Training Project: Missing Money Matters
 
-This GitHub repository contains the project "Missing Money Matters" completed as part of the "SQL Essential Training" course on LinkedIn Learning by Tech Educator & Best-Selling Author Walter Shields. 
+This GitHub repository contains the project "Missing Money Matters" completed as part of the ["SQL Essential Training"](https://www.linkedin.com/learning/sql-essential-training-20685933?u=89142130) course on LinkedIn Learning by Tech Educator & Best-Selling Author Walter Shields. 
 
 ## Project Description
 
